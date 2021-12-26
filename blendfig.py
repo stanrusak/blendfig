@@ -49,6 +49,10 @@ class Figure:
             for trace in trace_type_list:
         
                 trace.draw()
+        
+        # draw axes
+        self.ax = Axes(self.bounds.bounds)
+        self.ax.draw()
 
 class Trace:
     
@@ -123,6 +127,18 @@ class Axes:
     def __init__(self, bounds):
         
         self.xbounds, self.ybounds, self.zbounds = bounds
+        
+    def draw(self):
+        
+        add_box(self.xbounds, self.ybounds, self.zbounds)
+        
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.context.object.data.vertices[-1].select = True
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.delete(type='VERT')
+        bpy.ops.object.mode_set(mode='OBJECT')
         
     
 class Bounds:
@@ -205,15 +221,6 @@ def delete_material(material=None):
     except Exception as e:
         
         print(e)        
-            
-                
-                
-        
-        
-        
-    
-    
-        
         
 
 def add_grid(x, y, subdivisions=100):
