@@ -66,7 +66,10 @@ class Surface(Trace):
     
     unnamed_surface_count = 0 # count how many unnamed surfaces have been created for consistent automatic naming.
     
-    def __init__(self, x=None, y=None, z=None, name="Surface", color=None):
+    def __init__(
+                    self, x=None, y=None, z=None, name="Surface", color=None,
+                    mesh=True, mesh_skip='auto', mesh_thickness = .002, mesh_color=(0,0,0,1)
+                ):
         
         # save input data
         self.x = np.array(x)
@@ -100,6 +103,11 @@ class Surface(Trace):
         else:
             self.color = next(color_cycle)
         
+        # save mesh parameters
+        self.mesh = mesh # whether to create an additional mesh
+        self.mesh_skip = mesh_skip 
+        self.mesh_color = mesh_color
+        self.mesh_thickness = mesh_thickness
         
     def draw(self):
         
@@ -117,9 +125,25 @@ class Surface(Trace):
         material = bpy.data.materials.new(self.name)
         material.diffuse_color = self.color
         object.data.materials.append(material)
-        print(f"Assigning material {material.name} color {self.color}\n Object: {object.name}\n {object.data.name}")
+        #print(f"Assigning material {material.name} color {self.color}\n Object: {object.name}\n {object.data.name}")
         
-        
+        # create mesh
+        if self.mesh:
+            
+            # determine how many mesh lines to skip
+            if self.mesh_skip == 'auto':
+                self.mesh_skip = 1
+            
+            # create mesh material
+            material = bpy.data.materials.new(self.name + ' Mesh')
+            material.diffuse_color = self.mesh_color
+                            
+            for x in self.x[:,0][::self.mesh_skip]:
+                make_mesh_curve(x=x, bevel=self.mesh_thickness, material=material)
+                
+            
+            for y in self.y[0,:][::self.mesh_skip]:
+                make_mesh_curve(y=y, bevel=self.mesh_thickness, material=material)                
         
 
 class Axes:
@@ -279,43 +303,9 @@ def surface_from_grid(z):
     
     for i, vert in enumerate(data.vertices):
         
-        vert.co.z = z[i % xlen][int(i/xlen)]
+        vert.co.z = z[i % xlen][int(i/xlen)]    
 
-def add_plane(size, location=(0, 0, 0), subdivide=100):
-    """ Add a 2D plane and subdivid it """
-    
-    # parse input
-    if type(size) is int or type(size) is float:
-        
-        if size <= 0:
-            raise ValueError("Plane size must be posititive")
-        
-        x, y = size, size
-        scale = 1
-    
-    elif len(size) == 2:
-        x, y = size
-        scale = y/x
-        print(scale)
-    
-    else:
-        raise ValueError("Acceptable inputs for size are int or float for a square plane or iterable of type (length, width)")
-    
-    # add and scale mesh
-    bpy.ops.mesh.primitive_plane_add(size=x, enter_editmode=False, align='WORLD', location=location)
-    bpy.ops.transform.resize(value=(1, scale, 1), mirror=False, use_proportional_edit=False)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-
-
-    # subdivide plane
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.subdivide(number_cuts=subdivide-1)
-    bpy.ops.object.mode_set(mode='OBJECT')
-    
-    # TODO: subdivide y axis proportionally possibly with loop cuts
-    
-
-def make_surface(f, size):
+def surface_from_function(f, size):
     
     data = bpy.context.object.data
 
@@ -328,51 +318,31 @@ def f(x, y):
     
     return (.05*x**2 + np.sinh(y)**2)/np.cosh(y)**4
 
-
-def make_curves():
-
-    # go to edit edge select mode
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_mode(type='EDGE')
+def make_mesh_curve(x=None, y=None, bevel=0, material=None, epsilon=1.e-5):
+    """ Duplicate a mesh line in a selected mesh as a sperate object. Give x or y coordinate of the mesh line. """
     
-    # select edge loop
-    data = bpy.context.object.data
-    edge = data.edges[500]
-    edge.select = True
-    bpy.ops.mesh.loop_multi_select(ring=False)
-
-def main():
-
-    size = 4
-    resolution = 100
-
-    add_plane(size, resolution)
-    make_surface(f, size)
-    add_plane(size, resolution)
-    
-    plane = bpy.data.objects['Plane']
-
-
-    for i in range(10):
-        make_x_curve(.2*i)
-        bpy.context.view_layer.objects.active = plane
-        make_y_curve(.2*i)
-        if i != 0:
-            bpy.context.view_layer.objects.active = plane
-            make_x_curve(-.2*i)
-            bpy.context.view_layer.objects.active = plane
-            make_y_curve(-.2*i)
-        bpy.context.view_layer.objects.active = plane
-
-def make_x_curve(x, epsilon=1.e-5):
-    
+    # check for input
+    if x != None:
+        direction = 0
+        value = x
+        coordinate = 'x'
+    elif y != None:
+        direction = 1
+        value = y
+        coordinate = 'y'
+    else:
+        raise ValueError("No coordinate input given")
+    if x != None and y != None:
+        raise ValueError("Can only make curves along one direction. Give either x or y.")    
+        
+    # enable edge selection
     bpy.ops.object.mode_set(mode='OBJECT')
     obj = bpy.context.active_object
-
     bpy.ops.object.mode_set(mode='EDIT') 
     bpy.context.tool_settings.mesh_select_mode = (False, True, False) # force edges
     bpy.ops.object.mode_set(mode='OBJECT')
 
+    # select edges which meet the criteria
     for edge in obj.data.edges:
         
         v1, v2 = edge.vertices
@@ -380,59 +350,31 @@ def make_x_curve(x, epsilon=1.e-5):
         v2 = obj.data.vertices[v2]
         
         # if the edeg is in y direction
-        if abs(v1.co.x - v2.co.x) < epsilon and abs(v1.co.x - x) < epsilon:
+        if abs(v1.co[direction] - v2.co[direction]) < epsilon and abs(v1.co[direction] - value) < epsilon:
             edge.select = True
         
 
+    # duplicate selected edges
     bpy.ops.object.mode_set(mode='EDIT')
-    
     bpy.ops.mesh.duplicate()
     bpy.ops.mesh.separate(type='SELECTED')
-
     bpy.ops.object.mode_set(mode='OBJECT')
-    
+
+    # rename and convert to curve
     plane, curve = bpy.context.selected_objects
     plane.select_set(False)
     bpy.context.view_layer.objects.active = curve
-    curve.name = f"Curve.x={x:.1f}"
+    curve.name = f"Curve {coordinate}={value:.1f}"
     bpy.ops.object.convert(target='CURVE')
-
-def make_y_curve(y, epsilon=1.e-5):
     
-    bpy.ops.object.mode_set(mode='OBJECT')
-    obj = bpy.context.active_object
-
-    bpy.ops.object.mode_set(mode='EDIT') 
-    bpy.context.tool_settings.mesh_select_mode = (False, True, False) # force edges
-    bpy.ops.object.mode_set(mode='OBJECT')
-
-    for edge in obj.data.edges:
-        
-        v1, v2 = edge.vertices
-        v1 = obj.data.vertices[v1]
-        v2 = obj.data.vertices[v2]
-        
-        # if the edeg is in y direction
-        if abs(v1.co.y - v2.co.y) < epsilon and abs(v1.co.y - y) < epsilon:
-            edge.select = True
-        
-
-    bpy.ops.object.mode_set(mode='EDIT')
+    # bevel and set material
+    if bevel:
+        curve.data.bevel_depth = bevel
+    if material:
+        curve.data.materials.append(material)
     
-    bpy.ops.mesh.duplicate()
-    bpy.ops.mesh.separate(type='SELECTED')
-
-    bpy.ops.object.mode_set(mode='OBJECT')
-    
-    plane, curve = bpy.context.selected_objects
-    plane.select_set(False)
-    bpy.context.view_layer.objects.active = curve
-    curve.name = f"Curve.y={y:.1f}"
-    bpy.ops.object.convert(target='CURVE')
-
-
-
-
+    # select the original mesh
+    bpy.context.view_layer.objects.active = obj
 
         
         
