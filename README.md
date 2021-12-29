@@ -1,6 +1,6 @@
 # blendfig
 
-![](https://github.com/stanrusak/stanrusak.github.io/blob/main/files/projects/blendfig/example1.png?raw=true)
+![](https://github.com/stanrusak/stanrusak.github.io/blob/main/files/projects/blendfig/banner.png?raw=true)
 
 ## Overview
 
@@ -18,7 +18,7 @@ Syntax is similar to that of plotly.
 import blendfig as bf
 import numpy as np
 
-x, y = np.mgrid[-1:1:101j, -1:1:101j]
+x, y = np.mgrid[-1:1:51j, -1:1:51j]
 z =(x**2+y**2-1)**2
 
 fig = bf.Figure()
@@ -27,3 +27,4 @@ fig.create()
 
 ```
 
+![Example](https://github.com/stanrusak/stanrusak.github.io/blob/main/files/projects/blendfig/example.png?raw=true)
