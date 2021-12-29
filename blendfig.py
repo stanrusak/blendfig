@@ -17,9 +17,9 @@ class Figure:
         
         self.traces = {}
         self.bounds = Bounds()
+        self.ax = Axes(self.bounds.bounds)
         
-        self.trace_colors = {}
-        
+        self.trace_colors = {}        
 
     def add_trace(self, trace):
         
@@ -40,8 +40,9 @@ class Figure:
             trace.color = color
             print(color)
         
-        # update bounding box
+        # update bounding box and axes
         self.bounds.update(trace.bounds)
+        self.ax.update(trace.bounds.bounds)
             
     def create(self):
         
@@ -148,9 +149,15 @@ class Surface(Trace):
         
 
 class Axes:
-    """ Object for storing information about and drawin axes. """
+    """ Object for storing information about and drawing the axes. """
     
-    def __init__(self, bounds):
+    def __init__(self, bounds, ticks='auto'):
+        
+        self.xbounds, self.ybounds, self.zbounds = bounds
+        self.ticks = ticks
+        self.num_ticks = (10,10,6)
+    
+    def update(self, bounds):
         
         self.xbounds, self.ybounds, self.zbounds = bounds
         
@@ -167,12 +174,20 @@ class Axes:
         bpy.ops.object.mode_set(mode='OBJECT')
         
         # draw ticks
-        bounds = (self.xbounds, self.ybounds, self.zbounds)
-        for axis in range(3):
+        if self.ticks:
             
-            ticks = np.linspace(*bounds[axis], 11)
-            add_ticks(ticks, axis, bounds=bounds) 
-        
+            bounds = (self.xbounds, self.ybounds, self.zbounds)
+            for axis in range(3):
+                
+                # if no input calculate ticks auomatically
+                if self.ticks == 'auto':
+                    ticks = automatic_ticks(*bounds[axis], num_ticks=self.num_ticks[axis])
+                # otherwise take from input    
+                else:
+                    ticks = self.ticks[axis]
+                
+                add_ticks(ticks, axis, bounds=bounds) 
+            
         
     
 class Bounds:
@@ -386,7 +401,54 @@ def make_mesh_curve(x=None, y=None, bevel=0, material=None, epsilon=1.e-5):
     # select the original mesh
     bpy.context.view_layer.objects.active = obj
 
-        
+
+def nice_number(value, round=False):
+
+    
+    exponent = np.floor(np.log10(value))
+    fraction = value / 10 ** exponent
+
+    if round:
+        if fraction < 1.5:
+            nice_fraction = 1.
+        elif fraction < 3.:
+            nice_fraction = 2.
+        elif fraction < 7.:
+            nice_fraction = 5.
+        else:
+            nice_fraction = 10.
+    else:
+        if fraction <= 1:
+            nice_fraction = 1.
+        elif fraction <= 2:
+            nice_fraction = 2.
+        elif fraction <= 5:
+            nice_fraction = 5.
+        else:
+            nice_fraction = 10.
+
+    return nice_fraction * 10 ** exponent
+
+
+def automatic_ticks(min_val, max_val, num_ticks=10):
+
+    axis_width = max_val - min_val
+    if axis_width == 0:
+        nice_tick = 0
+    else:
+        nice_range = nice_number(axis_width)
+        nice_tick = nice_number(nice_range / (num_ticks - 1), round=True)
+        axis_start = np.floor(min_val / nice_tick) * nice_tick
+        axis_end = np.ceil(max_val / nice_tick) * nice_tick
+
+    ticks = np.arange(axis_start, axis_end + nice_tick, nice_tick)
+    
+    # round to get rid of floating point imprecision
+    if np.log10(nice_tick) > -14:
+        ticks = np.round(ticks, 15) + 0.
+    
+    return ticks
+    
 def add_ticks(ticks, axis, bounds=None, size = .1, offset = .2):
     
     max_length = 2
