@@ -4,11 +4,11 @@
 
 ## Overview
 
-    blendfig is a Python module to be used with the 3D modeling software Blender. With blendfig you can create surface plots in Blender similarly to the usual Python plotting libraries such as plotly and matplotlib. You can then use Blender's powerful shading, modeling etc. features to create beautiful plots and animations.
+blendfig is a Python module to be used with the 3D modeling software Blender. With blendfig you can create surface plots in Blender similarly to the usual Python plotting libraries such as plotly and matplotlib. You can then use Blender's powerful shading, modeling etc. features to create beautiful plots and animations.
 
 ## Installation
 
-Blender comes with its own Python installation so the easiest way is add `blendfig.py`  to its scripts directory. On Windows this is `C:\Program Files\Blender Foundation\Blender <version>\<version>\scripts\modules`.
+Blender comes with its own Python installation so the easiest way is to add `blendfig.py`  to its scripts directory. On Windows this is `C:\Program Files\Blender Foundation\Blender <version>\<version>\scripts\modules`.
 
 ## Usage
 

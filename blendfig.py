@@ -1,5 +1,6 @@
 import bpy
 import numpy as np
+from numpy import pi
 from itertools import cycle
 
 
@@ -147,6 +148,7 @@ class Surface(Trace):
         
 
 class Axes:
+    """ Object for storing information about and drawin axes. """
     
     def __init__(self, bounds):
         
@@ -163,6 +165,14 @@ class Axes:
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.delete(type='VERT')
         bpy.ops.object.mode_set(mode='OBJECT')
+        
+        # draw ticks
+        bounds = (self.xbounds, self.ybounds, self.zbounds)
+        for axis in range(3):
+            
+            ticks = np.linspace(*bounds[axis], 11)
+            add_ticks(ticks, axis, bounds=bounds) 
+        
         
     
 class Bounds:
@@ -377,10 +387,42 @@ def make_mesh_curve(x=None, y=None, bevel=0, material=None, epsilon=1.e-5):
     bpy.context.view_layer.objects.active = obj
 
         
+def add_ticks(ticks, axis, bounds=None, size = .1, offset = .2):
+    
+    max_length = 2
+    
+    if bounds == None:
+        xmin, ymin, zmin = 0, 0, 0
+        xmax, ymax, zmax = 0, 0, 0
+    else:
+        xmin, xmax =bounds[0]
+        ymin, ymax =bounds[1]
+        zmin, zmax =bounds[2]
+    
+    if axis == 0:
+        rotation = (0, 0 ,pi/2)
+        initial_location = [0, ymax + offset, zmin]
+    elif axis == 1:
+        rotation = (0, 0, pi)
+        initial_location = [xmax + offset , 0, zmin]
+    elif axis == 2:
+        rotation = (pi/2, 0, 3*pi/4)
+        initial_location = [xmax + offset/3, ymin - offset/3, 0]
         
+    for tick in ticks:
         
+        location = initial_location
+        location[axis] = tick
         
-        
+        bpy.ops.object.text_add(location=location, rotation=rotation, scale=(1, 1, 1))
+        text_data = bpy.context.object.data
+        text_data.body = f"{tick:.01f}"
+        text_data.size = size
+        if axis:
+            text_data.align_x = 'RIGHT'
+        text_data.align_y = 'CENTER'
         
 
-
+        
+        
+        
