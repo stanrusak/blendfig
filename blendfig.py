@@ -58,7 +58,7 @@ class Figure:
 
 class Trace:
     
-    """ Trace template """
+    """ Trace template. Eventually add support for other figure types."""
     pass
 
 

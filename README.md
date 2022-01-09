@@ -28,3 +28,6 @@ fig.create()
 ```
 
 ![Example](https://github.com/stanrusak/stanrusak.github.io/blob/main/files/projects/blendfig/example.png?raw=true)
+
+And after some simple shading
+![After shading](https://github.com/stanrusak/stanrusak.github.io/blob/main/files/projects/blendfig/example_shaded.png?raw=true)
