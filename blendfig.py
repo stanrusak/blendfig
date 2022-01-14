@@ -58,10 +58,94 @@ class Figure:
 
 class Trace:
     
-    """ Trace template. Eventually add support for other figure types."""
+    """ Trace template """
     pass
 
-
+class Scatter(Trace):
+    """ Object for scatter and line plots """
+    
+    def __init__(self, x=None, y=None, z=None, name="Scatter"):
+        
+        self.name = name
+        self.active_axes = [] # non-zero axes 
+        
+        self.x, self.y, self.z, self.point_num = 0, 0, 0, 0
+        if not x is None:
+            self.x = x
+            self.active_axes.append("x")
+            self.point_num = len(self.x)
+        if not y is None:
+            self.y = y
+            self.active_axes.append("y")
+            
+            if self.point_num and self.point_num != len(self.y):
+                raise ValueError("Length of x and y do not match")
+            else:
+                self.point_num = len(self.y)                
+        if not z is None:
+            self.z = z
+            
+            if self.active_axes:
+                if len(z) != self.point_num:
+                    raise ValueError(f"Length of z and {self.active_axes[0]} do not match")             
+            self.active_axes.append("z")
+        
+    
+    def draw(self):
+        
+        mesh = bpy.data.meshes.new(self.name)
+        mesh.vertices.add(self.point_num)
+        mesh.edges.add(self.point_num-1)
+        
+        if not self.x is 0:
+            
+            # convert to array in case is dataframe
+            x = np.array(self.x)
+            
+            # if data is not numbers replace by range
+            if x.dtype != 'float' and x.dtype != 'int':
+                x = np.arange(0, x.shape[0])
+        else:
+            x = 0 * np.ones(self.point_num)
+            
+        if not self.y is 0:
+            
+            # convert to array in case is dataframe
+            y = np.array(self.y)
+            
+            # if data is not numbers replace by range
+            if y.dtype != 'float' and y.dtype != 'int':
+                y = np.arange(0, y.shape[0])
+        else:
+            y = 0 * np.ones(self.point_num)
+            
+        if not self.z is 0:
+            
+            # convert to array in case is dataframe
+            z = np.array(self.z)
+            
+            # if data is not numbers replace by range
+            if z.dtype != 'float' and z.dtype != 'int':
+                z = np.arange(0, z.shape[0])
+        else:
+            z = 0 * np.ones(self.point_num)
+        
+        
+        
+        for i in range(self.point_num):
+            
+            mesh.vertices[i].co = x[i], y[i], z[i]
+            
+            if i < self.point_num-1:
+                mesh.edges[i].vertices = (i,i+1)
+                
+        object = bpy.data.objects.new(self.name, mesh)
+        #c = bpy.data.collections.get('Collection')
+        bpy.context.collection.objects.link(object)
+        bpy.context.view_layer.objects.active = object
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.object.editmode_toggle()
+        
 
 class Surface(Trace):
     """ Surface trace """
@@ -189,7 +273,6 @@ class Axes:
                 add_ticks(ticks, axis, bounds=bounds) 
             
         
-    
 class Bounds:
     """ Object for storing the bounds of geometry """
     
@@ -225,7 +308,18 @@ class Bounds:
         
         self.set_bounds(bounds=[(xmin,xmax),(ymin,ymax),(zmin,zmax)])
            
-            
+def map_range(input_array, output_range):
+    """ Map an array of values to a desired range """
+    
+    # numpify
+    if type(input_array) != np.ndarray: 
+        input_array = np.array(numpy_array, output_range)
+        
+    # get ranges
+    input_min, input_max = np.min(input_array), np.max(input_array)
+    output_min, output_max = output_range
+    
+    return output_max* (input_array - input_min)/(input_max - input_min) + output_min
         
 def delete_material(material=None):
     """ Delete materials. By default deletes all materials.
