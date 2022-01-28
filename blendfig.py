@@ -1,4 +1,4 @@
-import bpy
+import bpy, os
 import numpy as np
 from numpy import pi
 from itertools import cycle
@@ -97,7 +97,7 @@ class Scatter(Trace):
         mesh.vertices.add(self.point_num)
         mesh.edges.add(self.point_num-1)
         
-        if not self.x is 0:
+        if not (type(self.x) is int):
             
             # convert to array in case is dataframe
             x = np.array(self.x)
@@ -108,7 +108,7 @@ class Scatter(Trace):
         else:
             x = 0 * np.ones(self.point_num)
             
-        if not self.y is 0:
+        if not (type(self.y) is int):
             
             # convert to array in case is dataframe
             y = np.array(self.y)
@@ -119,7 +119,7 @@ class Scatter(Trace):
         else:
             y = 0 * np.ones(self.point_num)
             
-        if not self.z is 0:
+        if not (type(self.z) is int):
             
             # convert to array in case is dataframe
             z = np.array(self.z)
@@ -146,6 +146,83 @@ class Scatter(Trace):
         bpy.ops.object.editmode_toggle()
         bpy.ops.object.editmode_toggle()
         
+        self.mesh_object = object
+        
+        return object
+    
+    def draw_zlabels(self,labels=None):
+        """ Add floating labels indicating z-values. The text objects are generated
+            from data and then positioned using geometry nodes for greater customizability. """
+        
+        if not labels:
+            labels = self.z
+        
+        # make a collection of labels
+        collection = add_text(labels, name=self.name + " zlabels")
+        
+        # add a text obect to put geometry nodes on
+        labels_object = add_text(self.name + " ZLabels", name=self.name + " ZLabels")
+        
+        
+        if 'ZLabels' not in bpy.data.node_groups:
+            append_nodetree('ZLabels')
+          
+        geonodes = labels_object.modifiers.new('ZLabels' + ' ' + self.name, type='NODES')
+        geonodes.node_group = bpy.data.node_groups['ZLabels']
+        geonodes.node_group.nodes['Object Info'].inputs[0].default_value = self.mesh_object
+        geonodes.node_group.nodes['Collection Info'].inputs[0].default_value = collection
+        
+    def draw_xlabels(self,labels=None):
+        """ Add labels indicating x-values. The text objects are generated
+            from data and then positioned using geometry nodes for greater customizability.
+        """
+            
+        if not labels:
+            labels = self.x
+        
+        # make a collection of labels
+        collection = add_text(labels, name=self.name + " xlabels", align_x='RIGHT')
+        collection.hide_viewport = True
+        collection.hide_render = True
+        
+        # add a text obect to put geometry nodes on
+        labels_object = add_text(self.name + " XLabels", name=self.name + " XLabels")
+        
+        
+        if 'XLabels' not in bpy.data.node_groups:
+            append_nodetree('XLabels')
+          
+        geonodes = labels_object.modifiers.new('XLabels' + ' ' + self.name, type='NODES')
+        geonodes.node_group = bpy.data.node_groups['XLabels']
+        geonodes.node_group.nodes['Object Info'].inputs[0].default_value = self.mesh_object
+        geonodes.node_group.nodes['Collection Info'].inputs[0].default_value = collection
+        
+        
+class Bar(Scatter):
+    """ Bar plot. Inerit from Scatter and add bars via Geometry Nodes """
+    
+    def draw(self):
+        
+        
+        if 'Bars' not in bpy.data.node_groups:
+            append_nodetree('Bars')
+        
+        # originial points
+        scatter_object = super().draw()
+        
+        # make copy to put geometry nodes on
+        bar_object = scatter_object.copy()
+        bar_object.data = scatter_object.data.copy()
+        bpy.context.collection.objects.link(bar_object) 
+        
+        # add geometry nodes
+        geonodes = bar_object.modifiers.new('Bars' + ' ' + self.name, type='NODES')
+        geonodes.node_group = bpy.data.node_groups['Bars']
+        geonodes.node_group.nodes['Object Info'].inputs[0].default_value = scatter_object
+        
+        return scatter_object
+        
+
 
 class Surface(Trace):
     """ Surface trace """
@@ -308,19 +385,42 @@ class Bounds:
         
         self.set_bounds(bounds=[(xmin,xmax),(ymin,ymax),(zmin,zmax)])
            
-def map_range(input_array, output_range):
+def map_array(input_array, output_range):
     """ Map an array of values to a desired range """
     
     # numpify
     if type(input_array) != np.ndarray: 
-        input_array = np.array(numpy_array, output_range)
+        input_array = np.array(input_array)
         
     # get ranges
     input_min, input_max = np.min(input_array), np.max(input_array)
     output_min, output_max = output_range
     
-    return output_max* (input_array - input_min)/(input_max - input_min) + output_min
+    return (output_max - output_min) * (input_array - input_min)/(input_max - input_min) + output_min
+
+
+def scale_array(input_array, limit):
+    """ Scale an array of values to be within a limiting value but preserve sign reationships """
+    
+    if limit <= 0:
+        raise ValueError("limit must be positive")
+    
+    # numpify
+    if type(input_array) != np.ndarray: 
+        input_array = np.array(input_array)
         
+    # get ranges
+    input_min, input_max = np.min(input_array), np.max(input_array)
+    
+    if input_min < 0 and abs(input_min) > input_max:
+        output_min = -limit
+        output_max = input_max/abs(input_min) * limit
+    else:
+        output_min = input_min/input_max * limit
+        output_max = limit
+    
+    return map_array(input_array, (output_min, output_max))
+
 def delete_material(material=None):
     """ Delete materials. By default deletes all materials.
         Alternatively can give it instance or names of materials to be deleted.""" 
@@ -412,6 +512,45 @@ def add_box(x, y, z):
     bpy.ops.mesh.primitive_cube_add(size=size, enter_editmode=False, align='WORLD', location=location)
     bpy.ops.transform.resize(value=(1, yscale, zscale), mirror=False, use_proportional_edit=False)
     bpy.ops.object.transform_apply(scale=True)
+    
+def add_text(text, name='Text', align_x='LEFT', align_y='CENTER', location=None):
+    """ Add a text object or a list thereof given a string or list of strings. Optionally can add locations."""
+    
+    
+    # handle single text object case
+    if type(text) is str:
+        text = [str(text)]
+        location = [(0, 0, 0)] if (location is None) else [location]
+        collection = False
+        
+    # for several cases add a collection
+    else:
+        collection = bpy.data.collections.new(name)
+        bpy.context.scene.collection.children.link(collection)
+        location = [(0, 0, 0)]*len(text) if (location is None) else location
+            
+    count = 1
+    for body, loc in zip(text, location):
+        
+        bpy.ops.object.text_add(location=loc)
+        object = bpy.context.active_object
+        object.data.body = str(body)
+        object.data.align_x = align_x
+        object.data.align_y = align_y
+        object.name = name
+            
+        if len(text) > 1:
+            object.name += ' ' + str(count)
+            count += 1
+        
+        # move to collection
+        if collection:
+            collection.objects.link(object)
+            bpy.context.scene.collection.objects.unlink(object)
+            
+    return collection if collection else object
+
+    
 
 def surface_from_grid(z):
     """ Deform a flat grid (must be active) into a surface characterizad by z data. Data must match the vertex structure of the grid. """
@@ -579,6 +718,17 @@ def add_ticks(ticks, axis, bounds=None, size = .1, offset = .2):
         text_data.align_y = 'CENTER'
         
 
+def append_nodetree(nodetree, filepath=''):
+    """ Append a geometry nodes tree from another file """
+    
+    if not filepath:
+        dirname = os.path.dirname(__file__)
+        filepath = os.path.join(dirname, 'blendfig_assets.blend')
+    else:
+        dirname = os.path.dirname(filepath)
         
-        
-        
+
+    bpy.ops.wm.append(
+        directory=os.path.join(filepath,'NodeTree'),
+        filename=nodetree
+        )

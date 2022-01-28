@@ -1,5 +1,6 @@
 __pycache__
 path.py
-*.blend1
-*.blend
+development.blend
+blendfig.blend
 blendfig.md
+*blend1
