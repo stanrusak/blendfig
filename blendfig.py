@@ -239,6 +239,16 @@ class Surface(Trace):
         self.y = np.array(y)
         self.z = np.array(z)
         
+        # if unput is of mgrid form save only the axis values
+        if len(self.x.shape) == 2:
+            self.x = self.x[:,0]
+        elif len(self.x.shape) > 2:
+            raise ValueError("Too many dimensions. x should have dimension 1 for list/array or 2 for numpy's mgrid.")
+        if len(self.y.shape) == 2:
+            self.y = self.y[0]
+        elif len(self.y.shape) > 2:
+            raise ValueError("Too many dimensions. y should have dimension 1 for list/array or 2 for numpy's mgrid.")
+        
         # ensure z data, if no x or y replace with integer ranges
         if not self.z.any():
             raise ValueError("No z data given")
@@ -248,9 +258,9 @@ class Surface(Trace):
             self.y = np.arange(len(z[0]))
         
         # save data bounds
-        xmin, xmax = x.min(), x.max()
-        ymin, ymax = y.min(), y.max()
-        zmin, zmax = z.min(), z.max()
+        xmin, xmax = self.x.min(), self.x.max()
+        ymin, ymax = self.y.min(), self.y.max()
+        zmin, zmax = self.z.min(), self.z.max()
         
         self.bounds = Bounds([(xmin, xmax),(ymin, ymax),(zmin, zmax)])
         
@@ -301,12 +311,12 @@ class Surface(Trace):
             material = bpy.data.materials.new(self.name + ' Mesh')
             material.diffuse_color = self.mesh_color
                             
-            for x in self.x[:,0][::self.mesh_skip]:
+            for x in self.x[::self.mesh_skip]:
                 make_mesh_curve(x=x, bevel=self.mesh_thickness, material=material)
                 
             
-            for y in self.y[0,:][::self.mesh_skip]:
-                make_mesh_curve(y=y, bevel=self.mesh_thickness, material=material)                
+            for y in self.y[::self.mesh_skip]:
+                make_mesh_curve(y=y, bevel=self.mesh_thickness, material=material)                             
         
 
 class Axes:
