@@ -8,11 +8,15 @@ blendfig is a Python module to be used with the 3D modeling software Blender. Wi
 
 ## Installation
 
-Blender comes with its own Python installation so the easiest way is to add `blendfig.py`  to its scripts directory. On Windows this is `C:\Program Files\Blender Foundation\Blender <version>\<version>\scripts\modules`.
+```python
+python -m pip install blendfig
+```
+
+Blender comes with its own Python installation so make sure you are using Blender's Python binary. On Windows it is located at `C:\Program Files\Blender Foundation\Blender <version>\<version>\python\bin\python.exe` by default (you may need to run as administrator).
 
 ## Usage
 
-Syntax is similar to that of plotly. 
+Syntax is similar to that of plotly.
 
 ```python
 import blendfig as bf
