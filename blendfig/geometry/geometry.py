@@ -73,7 +73,7 @@ def add_text(text, name='Text', align_x='LEFT', align_y='CENTER', location=None)
         object.data.align_x = align_x
         object.data.align_y = align_y
         object.name = name
-            
+
         if len(text) > 1:
             object.name += ' ' + str(count)
             count += 1

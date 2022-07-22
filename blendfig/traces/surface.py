@@ -27,7 +27,6 @@ class Surface(Trace):
         xmin, xmax = self.x.min(), self.x.max()
         ymin, ymax = self.y.min(), self.y.max()
         zmin, zmax = self.z.min(), self.z.max()
-        
         self.bounds = Bounds([(xmin, xmax),(ymin, ymax),(zmin, zmax)])
         
         # name
@@ -86,6 +85,7 @@ class Surface(Trace):
                 make_mesh_curve(y=y, bevel=self.mesh_thickness, material=material) 
 
     def _check_input(self):
+        """ Determin input type and check for validity """
 
         # if input is of mgrid form save only the axis values
         if len(self.x.shape) == 2:
@@ -104,3 +104,39 @@ class Surface(Trace):
             self.x = np.arange(len(self.z))
         if not self.y.any():
             self.y = np.arange(len(self.z[0]))
+
+    def _rescale(self, initial_bounds, rescaled_bounds):
+        """ Rescale data to standardize figure size """
+
+        (xmin_i, xmax_i), (ymin_i, ymax_i), (zmin_i, zmax_i) = initial_bounds
+        (xmin_r, xmax_r), (ymin_r, ymax_r), (zmin_r, zmax_r) = rescaled_bounds
+        (xmin, xmax), (ymin, ymax), (zmin, zmax) = self.bounds.bounds
+
+        x_ratio = (self.x - xmin_i)/(xmax_i - xmin_i)
+        y_ratio = (self.y - ymin_i)/(ymax_i - ymin_i)
+        z_ratio = (self.z - zmin_i)/(zmax_i - zmin_i)
+
+        self._x = xmin_r + x_ratio * (xmax_r - xmin_r)
+        self._y = ymin_r + y_ratio * (ymax_r - ymin_r)
+        self._z = zmin_r + z_ratio * (zmax_r - zmin_r)
+
+    def _draw_rescaled(self, initial_bounds, rescaled_bounds):
+
+        self._rescale(initial_bounds, rescaled_bounds)
+
+        x_sub, y_sub = self._z.shape
+        xmin, xmax = self._x.min(), self._x.max()
+        ymin, ymax = self._y.min(), self._y.max()
+        
+        add_grid(x=(xmin, xmax), y=(ymin, ymax), subdivisions=(x_sub-1, y_sub-1))
+        surface_from_grid(self._z)
+        
+        # rename object and mesh
+        object = bpy.context.object
+        object.name = self.name
+        object.data.name = self.name
+        
+        # create and assign material
+        material = bpy.data.materials.new(self.name)
+        material.diffuse_color = self.color
+        object.data.materials.append(material)

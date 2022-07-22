@@ -1,11 +1,13 @@
 from .traces.trace import Trace
 from .traces.surface import Surface
 from .traces.scatter import Scatter
+from .traces.bar import Bar
 from .bounds.bounds import Bounds
 from .axes.axes import Axes
 from .materials.colors import COLORS, cycle
 
 FIGURE_SIZE = 100
+__version__ = '0.1.0'
 
 class Figure:
     """ Figure object."""

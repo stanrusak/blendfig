@@ -10,7 +10,7 @@ class Scatter(Trace):
     def __init__(self, x=None, y=None, z=None, name="Scatter"):
         
 
-        super().__init__(self)
+        super().__init__()
         self.name = name
         self.active_axes = [] # non-zero axes 
         
@@ -99,7 +99,7 @@ class Scatter(Trace):
         """ Add floating labels indicating z-values. The text objects are generated
             from data and then positioned using geometry nodes for greater customizability. """
         
-        if labels is not None:
+        if labels is None:
             labels = self.z
         
         # make a collection of labels
@@ -122,7 +122,7 @@ class Scatter(Trace):
             from data and then positioned using geometry nodes for greater customizability.
         """
             
-        if labels is not None:
+        if labels is None:
             labels = self.x
         
         # make a collection of labels
