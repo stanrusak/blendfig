@@ -53,7 +53,7 @@ class Surface(Trace):
         if rescale:
             x, y, z = rescale_xyz(self.x, self.y, self.z)
             bounds = Bounds._from_xyz(x, y, z)
-            self.bounds_rescaled = bounds
+            self.bounds.rescaled = bounds
         else:
             x, y, z = self.x, self.y, self.z
 

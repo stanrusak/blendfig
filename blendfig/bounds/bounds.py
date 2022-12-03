@@ -35,6 +35,13 @@ class Bounds:
         
         self.set_bounds(bounds=[(xmin,xmax),(ymin,ymax),(zmin,zmax)])
 
+        if hasattr(bounds, 'rescaled'):
+
+            if not hasattr(self, 'rescaled'):
+                raise Exception("Error: trying to add a rescaled trace to a non-rescaled figure")
+            
+            self.rescaled.update(bounds.rescaled)
+
     @classmethod
     def _from_object(cls, obj):
 

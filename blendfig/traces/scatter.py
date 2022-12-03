@@ -2,6 +2,7 @@ from .trace import Trace
 from ..geometry.geometry import add_text
 from ..nodes.nodes import append_nodetree
 from ..tools.functions import rescale_xyz
+from ..bounds.bounds import Bounds
 import numpy as np
 import bpy
 
@@ -34,8 +35,8 @@ class Scatter(Trace):
                 if len(z) != self.point_num:
                     raise ValueError(f"Length of z and {self.active_axes[0]} do not match")             
             self.active_axes.append("z")
-    
-        
+
+        self.bounds = Bounds._from_object(self)
     
     def draw(self, rescale=True):
         
@@ -100,6 +101,8 @@ class Scatter(Trace):
 
         if rescale:
             x, y, z = rescale_xyz(x, y, z)
+            bounds = Bounds._from_xyz(x, y, z)
+            self.bounds.rescaled = bounds
 
         return x, y, z
     

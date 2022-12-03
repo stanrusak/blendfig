@@ -15,8 +15,8 @@ class Figure:
     def __init__(self, size: tuple=(FIGURE_SIZE, FIGURE_SIZE)) -> None:
         
         self.traces = {}
-        self.bounds = Bounds()
-        self.ax = Axes(self.bounds.bounds)
+        self.bounds = None
+        self.ax = None
         
         self.trace_colors = {}        
 
@@ -40,8 +40,14 @@ class Figure:
             print(color)
         
         # update bounding box and axes
-        self.bounds.update(trace.bounds)
-        self.ax.update(trace.bounds.bounds)
+        if self.bounds:
+            self.bounds.update(trace.bounds)
+            # self.ax.update(self.bounds)
+        else:
+            self.bounds = trace.bounds
+            # self.axes = Axes(self.bounds)
+
+        
             
     def create(self):
         
@@ -52,5 +58,5 @@ class Figure:
                 trace.draw()
         
         # draw axes
-        self.ax = Axes(self.bounds.bounds)
+        self.ax = Axes(self.bounds)
         self.ax.draw()

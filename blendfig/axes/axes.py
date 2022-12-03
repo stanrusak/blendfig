@@ -1,4 +1,5 @@
 from ..geometry.geometry import add_box
+from ..bounds.bounds import Bounds
 import numpy as np
 import bpy
 
@@ -7,18 +8,22 @@ class Axes:
     
     def __init__(self, bounds, ticks='auto'):
         
-        self.xbounds, self.ybounds, self.zbounds = bounds
+        self.bounds = bounds
+
         self.ticks = ticks
         self.num_ticks = (10,10,6)
     
     def update(self, bounds):
         
-        self.xbounds, self.ybounds, self.zbounds = bounds
+        self.bounds = bounds
         
     def draw(self):
         
-        add_box(self.xbounds, self.ybounds, self.zbounds)
-        
+        if hasattr(self.bounds, 'rescaled'):
+            add_box(*self.bounds.rescaled.bounds)
+        else:
+            add_box(*self.bounds.bounds)
+
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -29,21 +34,21 @@ class Axes:
         
         # draw ticks
         if self.ticks:
-            
-            bounds = (self.xbounds, self.ybounds, self.zbounds)
+
             for axis in range(3):
                 
                 # if no input calculate ticks auomatically
+                physical_bounds = self.bounds.bounds if not hasattr(self.bounds, 'rescaled') else self.bounds.rescaled.bounds
                 if self.ticks == 'auto':
-                    ticks = automatic_ticks(*bounds[axis], num_ticks=self.num_ticks[axis])
+                    ticks = automatic_ticks(*self.bounds.bounds[axis], num_ticks=self.num_ticks[axis])
+                    tick_locations = automatic_ticks(*physical_bounds[axis], num_ticks=self.num_ticks[axis])
                 # otherwise take from input    
                 else:
                     ticks = self.ticks[axis]
                 
-                add_ticks(ticks, axis, bounds=bounds)
+                add_ticks(ticks, tick_locations, axis, bounds=physical_bounds)
 
 def nice_number(value, round=False):
-
     
     exponent = np.floor(np.log10(value))
     fraction = value / 10 ** exponent
@@ -69,7 +74,6 @@ def nice_number(value, round=False):
 
     return nice_fraction * 10 ** exponent
 
-
 def automatic_ticks(min_val, max_val, num_ticks=10):
 
     axis_width = max_val - min_val
@@ -89,17 +93,11 @@ def automatic_ticks(min_val, max_val, num_ticks=10):
     
     return ticks
     
-def add_ticks(ticks, axis, bounds=None, size = .1, offset = .2):
+def add_ticks(ticks, tick_locations, axis, bounds, size = .5, offset = .2):
     
-    max_length = 2
-    
-    if bounds == None:
-        xmin, ymin, zmin = 0, 0, 0
-        xmax, ymax, zmax = 0, 0, 0
-    else:
-        xmin, xmax =bounds[0]
-        ymin, ymax =bounds[1]
-        zmin, zmax =bounds[2]
+    xmin, xmax = bounds[0]
+    ymin, ymax = bounds[1]
+    zmin, zmax = bounds[2]
     
     if axis == 0:
         rotation = (0, 0 ,np.pi/2)
@@ -111,10 +109,10 @@ def add_ticks(ticks, axis, bounds=None, size = .1, offset = .2):
         rotation = (np.pi/2, 0, 3*np.pi/4)
         initial_location = [xmax + offset/3, ymin - offset/3, 0]
         
-    for tick in ticks:
+    for tick, tick_location in zip(ticks, tick_locations):
         
         location = initial_location
-        location[axis] = tick
+        location[axis] = tick_location
         
         bpy.ops.object.text_add(location=location, rotation=rotation, scale=(1, 1, 1))
         text_data = bpy.context.object.data
