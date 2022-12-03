@@ -4,7 +4,7 @@
 
 ## Overview
 
-blendfig is a Python module to be used with the 3D modeling software Blender. With blendfig you can create surface plots in Blender similarly to the usual Python plotting libraries such as plotly and matplotlib. You can then use Blender's powerful shading, modeling etc. features to create beautiful plots and animations.
+blendfig is a Python module to be used with the 3D modeling software Blender. With blendfig you can create plots in Blender similarly to the usual Python plotting libraries such as plotly and matplotlib. You can then use Blender's powerful shading, modeling etc. features to create beautiful plots and animations.
 
 ## Installation
 
@@ -101,7 +101,7 @@ bar.draw_zlabels(zlabels)
 | :--------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------: |
 | ![](https://github.com/stanrusak/stanrusak.github.io/raw/main/files/projects/blendfig/bar.png) | ![](https://github.com/stanrusak/stanrusak.github.io/raw/main/files/projects/blendfig/bar_shaded.png) |
 
-The bars and labels are generated with Geometry Nodes which allows for more customization. Selecting bars/labels and clicking on the `Modifiers` tab will show the following controls. Also the materials have to be set in these window.
+The bars and labels are generated with Geometry Nodes which allows for more customization. Selecting bars/labels and clicking on the `Modifiers` tab will show the following controls. Also the materials have to be set in these windows.
 
 |                                                   bars                                                   |                                              x labels                                              |                                              z labels                                              |
 | :------------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------------------------: |
