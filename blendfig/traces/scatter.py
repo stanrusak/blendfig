@@ -1,6 +1,7 @@
 from .trace import Trace
 from ..geometry.geometry import add_text
 from ..nodes.nodes import append_nodetree
+from ..tools.functions import rescale_xyz
 import numpy as np
 import bpy
 
@@ -9,7 +10,6 @@ class Scatter(Trace):
     
     def __init__(self, x=None, y=None, z=None, name="Scatter"):
         
-
         super().__init__()
         self.name = name
         self.active_axes = [] # non-zero axes 
@@ -36,13 +36,35 @@ class Scatter(Trace):
             self.active_axes.append("z")
         
     
-    def draw(self):
+    def draw(self, rescale=True):
         
         mesh = bpy.data.meshes.new(self.name)
         mesh.vertices.add(self.point_num)
         mesh.edges.add(self.point_num-1)
         
-        if not (type(self.x) is int):
+        x, y, z = self._get_xyz(rescale=rescale)
+        
+        for i in range(self.point_num):
+            
+            mesh.vertices[i].co = x[i], y[i], z[i]
+            
+            if i < self.point_num-1:
+                mesh.edges[i].vertices = (i,i+1)
+                
+        object = bpy.data.objects.new(self.name, mesh)
+        #c = bpy.data.collections.get('Collection')
+        bpy.context.collection.objects.link(object)
+        bpy.context.view_layer.objects.active = object
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.object.editmode_toggle()
+        
+        self.mesh_object = object
+        
+        return object
+
+    def _get_xyz(self, rescale=True):
+
+        if not isinstance(self.x, int):
             
             # convert to array in case is dataframe
             x = np.array(self.x)
@@ -53,7 +75,7 @@ class Scatter(Trace):
         else:
             x = 0 * np.ones(self.point_num)
             
-        if not (type(self.y) is int):
+        if not isinstance(self.y,int):
             
             # convert to array in case is dataframe
             y = np.array(self.y)
@@ -74,26 +96,11 @@ class Scatter(Trace):
                 z = np.arange(0, z.shape[0])
         else:
             z = 0 * np.ones(self.point_num)
-        
-        
-        
-        for i in range(self.point_num):
-            
-            mesh.vertices[i].co = x[i], y[i], z[i]
-            
-            if i < self.point_num-1:
-                mesh.edges[i].vertices = (i,i+1)
-                
-        object = bpy.data.objects.new(self.name, mesh)
-        #c = bpy.data.collections.get('Collection')
-        bpy.context.collection.objects.link(object)
-        bpy.context.view_layer.objects.active = object
-        bpy.ops.object.editmode_toggle()
-        bpy.ops.object.editmode_toggle()
-        
-        self.mesh_object = object
-        
-        return object
+
+        if rescale:
+            x, y, z = rescale_xyz(x, y, z)
+
+        return x, y, z
     
     def draw_zlabels(self,labels=None):
         """ Add floating labels indicating z-values. The text objects are generated

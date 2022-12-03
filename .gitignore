@@ -1,7 +1,13 @@
+# cache
 __pycache__
+.ipynb_checkpoints/
 
 # setup files
 blendfig.egg-info/
 testing/
 build/
 dist/
+
+# other
+.gitignore/
+*.ipynb

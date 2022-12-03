@@ -7,7 +7,7 @@ from .axes.axes import Axes
 from .materials.colors import COLORS, cycle
 
 FIGURE_SIZE = 100
-__version__ = '0.1.0'
+__version__ = '0.1.3'
 
 class Figure:
     """ Figure object."""
