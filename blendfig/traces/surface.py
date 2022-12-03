@@ -2,6 +2,7 @@ from .trace import Trace
 from ..bounds.bounds import Bounds
 from ..geometry.geometry import add_grid, surface_from_grid, make_mesh_curve
 from ..materials.colors import color_cycle
+from ..tools.functions import rescale_xyz
 import numpy as np
 import bpy
 
@@ -23,11 +24,8 @@ class Surface(Trace):
         # check and process input
         self._check_input()
         
-        # save data bounds
-        xmin, xmax = self.x.min(), self.x.max()
-        ymin, ymax = self.y.min(), self.y.max()
-        zmin, zmax = self.z.min(), self.z.max()
-        self.bounds = Bounds([(xmin, xmax),(ymin, ymax),(zmin, zmax)])
+        # get bounds
+        self.bounds = Bounds._from_object(self)
         
         # name
         if name == "Surface":
@@ -47,12 +45,20 @@ class Surface(Trace):
         self.mesh_color = mesh_color
         self.mesh_thickness = mesh_thickness
         
-    def draw(self, mesh=True):
+    def draw(self, mesh=True, rescale=True):
         
         x_sub, y_sub = self.z.shape
         
-        add_grid(x=self.bounds.x, y=self.bounds.y, subdivisions=(x_sub-1, y_sub-1))
-        surface_from_grid(self.z)
+        bounds = self.bounds
+        if rescale:
+            x, y, z = rescale_xyz(self.x, self.y, self.z)
+            bounds = Bounds._from_xyz(x, y, z)
+            self.bounds_rescaled = bounds
+        else:
+            x, y, z = self.x, self.y, self.z
+
+        add_grid(x=bounds.x, y=bounds.y, subdivisions=(x_sub-1, y_sub-1))
+        surface_from_grid(z)
         
         # rename object and mesh
         object = bpy.context.object
@@ -63,8 +69,6 @@ class Surface(Trace):
         material = bpy.data.materials.new(self.name)
         material.diffuse_color = self.color
         object.data.materials.append(material)
-        #print(f"Assigning material {material.name} color {self.color}\n Object: {object.name}\n {object.data.name}")
-          
                 
         # create mesh
         if self.mesh and mesh:
@@ -77,15 +81,14 @@ class Surface(Trace):
             material = bpy.data.materials.new(self.name + ' Mesh')
             material.diffuse_color = self.mesh_color
                             
-            for x in self.x[::self.mesh_skip]:
-                make_mesh_curve(x=x, bevel=self.mesh_thickness, material=material)
+            for x_ in x[::self.mesh_skip]:
+                make_mesh_curve(x=x_, bevel=self.mesh_thickness, material=material)
                 
-            
-            for y in self.y[::self.mesh_skip]:
-                make_mesh_curve(y=y, bevel=self.mesh_thickness, material=material) 
+            for y_ in y[::self.mesh_skip]:
+                make_mesh_curve(y=y_, bevel=self.mesh_thickness, material=material) 
 
     def _check_input(self):
-        """ Determin input type and check for validity """
+        """ Determine input type and check for validity """
 
         # if input is of mgrid form save only the axis values
         if len(self.x.shape) == 2:

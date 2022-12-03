@@ -37,9 +37,12 @@ def resize_array(input_array, output_size=10):
 
 def rescale_xyz(x,y,z, scale=10):
     
-    xrange = max(x)-min(x)
-    yrange = max(y)-min(y)
-    zrange = max(z)-min(z)
+    # numpify
+    x, y, z = [np.array(input_array) if (not isinstance(input_array, np.ndarray)) else input_array for input_array in [x,y,z]]
+    
+    xrange = x.max()-x.min()
+    yrange = y.max()-y.min()
+    zrange = z.max()-z.min()
 
     xr = resize_array(x, output_size=scale)
     yr = resize_array(y, output_size=scale*yrange/xrange)

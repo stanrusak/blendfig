@@ -34,6 +34,7 @@ class Scatter(Trace):
                 if len(z) != self.point_num:
                     raise ValueError(f"Length of z and {self.active_axes[0]} do not match")             
             self.active_axes.append("z")
+    
         
     
     def draw(self, rescale=True):

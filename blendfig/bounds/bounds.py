@@ -34,3 +34,23 @@ class Bounds:
         zmax = max(self.zmax, bounds.zmax)
         
         self.set_bounds(bounds=[(xmin,xmax),(ymin,ymax),(zmin,zmax)])
+
+    @classmethod
+    def _from_object(cls, obj):
+
+        xmin, xmax = obj.x.min(), obj.x.max()
+        ymin, ymax = obj.y.min(), obj.y.max()
+        zmin, zmax = obj.z.min(), obj.z.max()
+        bounds = cls([(xmin, xmax),(ymin, ymax),(zmin, zmax)])
+
+        return bounds
+
+    @classmethod
+    def _from_xyz(cls, x, y, z):
+
+        xmin, xmax = x.min(), x.max()
+        ymin, ymax = y.min(), y.max()
+        zmin, zmax = z.min(), z.max()
+        bounds = cls([(xmin, xmax),(ymin, ymax),(zmin, zmax)])
+
+        return bounds
